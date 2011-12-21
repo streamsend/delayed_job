@@ -47,6 +47,12 @@ module Delayed
         opts.on('--sleep-delay N', "Amount of time to sleep when no jobs are found") do |n|
           @options[:sleep_delay] = n
         end
+        opts.on('--queues=queues', "Specify which queue DJ must look up for jobs") do |queues|
+          @options[:queues] = queues.split(',')
+        end
+        opts.on('--queue=queue', "Specify which queue DJ must look up for jobs") do |queue|
+          @options[:queues] = queues.split(',')
+        end
       end
       @args = opts.parse!(args)
     end

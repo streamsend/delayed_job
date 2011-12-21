@@ -1,4 +1,6 @@
 shared_examples_for 'a backend' do
+  let(:worker) {Delayed::Worker.new }
+
   def create_job(opts = {})
     @backend.create(opts.merge(:payload_object => SimpleJob.new))
   end
@@ -9,7 +11,7 @@ shared_examples_for 'a backend' do
     Delayed::Worker.default_priority = 99
     SimpleJob.runs = 0
   end
-  
+
   it "should set run_at automatically if not set" do
     @backend.create(:payload_object => ErrorJob.new ).run_at.should_not be_nil
   end
@@ -27,7 +29,7 @@ shared_examples_for 'a backend' do
     @backend.enqueue SimpleJob.new
     @backend.count.should == 1
   end
-  
+
   it "should be able to set priority when enqueuing items" do
     @job = @backend.enqueue SimpleJob.new, 5
     @job.priority.should == 5
@@ -49,7 +51,7 @@ shared_examples_for 'a backend' do
     job = @backend.enqueue M::ModuleJob.new
     lambda { job.invoke_job }.should change { M::ModuleJob.runs }.from(0).to(1)
   end
-                   
+
   it "should raise an DeserializationError when the job class is totally unknown" do
     job = @backend.new :handler => "--- !ruby/object:JobThatDoesNotExist {}"
     lambda { job.payload_object.perform }.should raise_error(Delayed::Backend::DeserializationError)
@@ -78,33 +80,33 @@ shared_examples_for 'a backend' do
     job.should_receive(:attempt_to_load).with('Delayed::JobThatDoesNotExist').and_return(true)
     lambda { job.payload_object.perform }.should raise_error(Delayed::Backend::DeserializationError)
   end
-  
+
   describe "find_available" do
     it "should not find failed jobs" do
       @job = create_job :attempts => 50, :failed_at => @backend.db_time_now
       @backend.find_available('worker', 5, 1.second).should_not include(@job)
     end
-    
+
     it "should not find jobs scheduled for the future" do
       @job = create_job :run_at => (@backend.db_time_now + 1.minute)
       @backend.find_available('worker', 5, 4.hours).should_not include(@job)
     end
-    
+
     it "should not find jobs locked by another worker" do
       @job = create_job(:locked_by => 'other_worker', :locked_at => @backend.db_time_now - 1.minute)
       @backend.find_available('worker', 5, 4.hours).should_not include(@job)
     end
-    
+
     it "should find open jobs" do
       @job = create_job
       @backend.find_available('worker', 5, 4.hours).should include(@job)
     end
-    
+
     it "should find expired jobs" do
       @job = create_job(:locked_by => 'worker', :locked_at => @backend.db_time_now - 2.minutes)
       @backend.find_available('worker', 5, 1.minute).should include(@job)
     end
-    
+
     it "should find own jobs" do
       @job = create_job(:locked_by => 'worker', :locked_at => (@backend.db_time_now - 1.minutes))
       @backend.find_available('worker', 5, 4.hours).should include(@job)
@@ -115,7 +117,7 @@ shared_examples_for 'a backend' do
       @backend.find_available('worker', 7, 4.hours).should have(7).jobs
     end
   end
-  
+
   context "when another worker is already performing an task, it" do
 
     before :each do
@@ -129,7 +131,7 @@ shared_examples_for 'a backend' do
     it "should allow a second worker to get exclusive access if the timeout has passed" do
       @job.lock_exclusively!(1.minute, 'worker2').should == true
     end      
-    
+
     it "should be able to get access to the task if it was started more then max_age ago" do
       @job.locked_at = 5.hours.ago
       @job.save
@@ -154,7 +156,7 @@ shared_examples_for 'a backend' do
       @job.lock_exclusively!(5.minutes, 'worker1').should be_true
     end                                        
   end
-  
+
   context "when another worker has worked on a task since the job was found to be available, it" do
 
     before :each do
@@ -172,7 +174,7 @@ shared_examples_for 'a backend' do
       @job_copy_for_worker_2.lock_exclusively!(4.hours, 'worker2').should == false
     end
   end
-  
+
   describe "reserve" do
     before do
       Delayed::Worker.max_run_time = 2.minutes
@@ -212,7 +214,7 @@ shared_examples_for 'a backend' do
       described_class.reserve(@worker).should == job
     end
   end
-  
+
   context "#name" do
     it "should be the class name of the job that was enqueued" do
       @backend.create(:payload_object => ErrorJob.new ).name.should == 'ErrorJob'
@@ -228,7 +230,7 @@ shared_examples_for 'a backend' do
       @job.name.should == 'Story#save'
     end
   end
-  
+
   context "worker prioritization" do
     before(:each) do
       Delayed::Worker.max_priority = nil
@@ -260,23 +262,23 @@ shared_examples_for 'a backend' do
       jobs.each {|job| job.priority.should <= max}
     end
   end
-  
+
   context "clear_locks!" do
     before do
       @job = create_job(:locked_by => 'worker', :locked_at => @backend.db_time_now)
     end
-    
+
     it "should clear locks for the given worker" do
       @backend.clear_locks!('worker')
       @backend.find_available('worker2', 5, 1.minute).should include(@job)
     end
-    
+
     it "should not clear locks for other workers" do
       @backend.clear_locks!('worker1')
       @backend.find_available('worker1', 5, 1.minute).should_not include(@job)
     end
   end
-  
+
   context "unlock" do
     before do
       @job = create_job(:locked_by => 'worker', :locked_at => @backend.db_time_now)
@@ -288,27 +290,80 @@ shared_examples_for 'a backend' do
       @job.locked_at.should be_nil
     end
   end
-  
+
   context "large handler" do
     before do
       text = "Lorem ipsum dolor sit amet. " * 1000
       @job = @backend.enqueue Delayed::PerformableMethod.new(text, :length, {})
     end
-    
+
     it "should have an id" do
       @job.id.should_not be_nil
     end
   end
-  
+
+  context "named queues" do
+    context "when worker has one queue set" do
+      before(:each) do
+        worker.queues = ['large']
+      end
+
+      it "should only work off jobs which are from its queue" do
+        SimpleJob.runs.should == 0
+
+        create_job(:queue => "large")
+        create_job(:queue => "small")
+        worker.work_off
+
+        SimpleJob.runs.should == 1
+      end
+    end
+
+    context "when worker has two queue set" do
+      before(:each) do
+        worker.queues = ['large', 'small']
+      end
+
+      it "should only work off jobs which are from its queue" do
+        SimpleJob.runs.should == 0
+
+        create_job(:queue => "large")
+        create_job(:queue => "small")
+        create_job(:queue => "medium")
+        create_job
+        worker.work_off
+
+        SimpleJob.runs.should == 2
+      end
+    end
+
+    context "when worker does not have queue set" do
+      before(:each) do
+        worker.queues = []
+      end
+
+      it "should work off all jobs" do
+        SimpleJob.runs.should == 0
+
+        create_job(:queue => "one")
+        create_job(:queue => "two")
+        create_job
+        worker.work_off
+
+        SimpleJob.runs.should == 3
+      end
+    end
+  end
+
   context "max_attempts" do
     before(:each) do
       @job = described_class.enqueue SimpleJob.new
     end
-    
+
     it 'should not be defined' do
       @job.max_attempts.should be_nil
     end
-    
+
     it 'should use the max_retries value on the payload when defined' do
       @job.payload_object.stub!(:max_attempts).and_return(99)
       @job.max_attempts.should == 99
