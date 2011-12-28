@@ -1,18 +1,18 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name              = 'delayed_job'
-  s.version           = '2.0.7'
-  s.authors           = ["Chris Gaffney", "Brandon Keepers", "Tobias L\303\274tke"]
+  s.name              = 'delayed_job_with_named_queues'
+  s.version           = '2.0.7.1'
+  s.authors           = ["Ray Walters", "Jeff Roush"]
   s.summary           = 'Database-backed asynchronous priority queue system -- Extracted from Shopify'
   s.description       = "Delayed_job (or DJ) encapsulates the common pattern of asynchronously executing longer tasks in the background. It is a direct extraction from Shopify where the job table is responsible for a multitude of core tasks.
 
-This gem is collectiveidea's fork (http://github.com/collectiveidea/delayed_job)."
-  s.email             = ['chris@collectiveidea.com', 'brandon@opensoul.org']
+This gem is backported from v3.0.0pre4 of collectiveidea's fork, to add named queues to v2.0.7  (http://github.com/ezpub/delayed_job)."
+  s.email             = ['rwalters@ezpublishing.com', 'jroush@ezpublishing.com']
   s.extra_rdoc_files  = 'README.textile'
   s.files             = Dir.glob('{contrib,lib,generators,rails,recipes,spec,tasks}/**/*') +
                         %w(MIT-LICENSE README.textile)
-  s.homepage          = 'http://github.com/collectiveidea/delayed_job'
+  s.homepage          = 'http://github.com/ezpub/delayed_job'
   s.rdoc_options      = ["--main", "README.textile", "--inline-source", "--line-numbers"]
   s.require_paths     = ["lib"]
   s.test_files        = Dir.glob('spec/**/*')
