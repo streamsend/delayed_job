@@ -48,10 +48,10 @@ module Delayed
           @options[:sleep_delay] = n
         end
         opts.on('--queues=queues', "Specify which queue DJ must look up for jobs") do |queues|
-          @options[:queues] = queues.split(',')
+          @options[:queues] = queues.split(/\s*,\s*/)
         end
         opts.on('--queue=queue', "Specify which queue DJ must look up for jobs") do |queue|
-          @options[:queues] = queues.split(',')
+          @options[:queues] = queue.split(/\s*,\s*/)
         end
       end
       @args = opts.parse!(args)
