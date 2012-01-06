@@ -18,7 +18,7 @@ module Delayed
     
           priority = args.first || Delayed::Worker.default_priority
           run_at   = args[1]
-          queue    = args[2]
+          queue    = args[2] || Delayed::Worker.default_queue
           self.create(:payload_object => object, :priority => priority.to_i, :run_at => run_at, :queue => queue)
         end
 

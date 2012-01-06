@@ -3,11 +3,12 @@ require 'active_support/core_ext/numeric/time'
 
 module Delayed
   class Worker
-    cattr_accessor :min_priority, :max_priority, :max_attempts, :max_run_time, :default_priority, :sleep_delay, :logger, :queues
+    cattr_accessor :min_priority, :max_priority, :max_attempts, :max_run_time, :default_priority, :sleep_delay, :logger, :queues, :default_queue
     self.sleep_delay = 5
     self.max_attempts = 25
     self.max_run_time = 4.hours
     self.default_priority = 0
+    self.default_queue = nil
     self.queues = []
     
     # By default failed jobs are destroyed after too many attempts. If you want to keep them around
