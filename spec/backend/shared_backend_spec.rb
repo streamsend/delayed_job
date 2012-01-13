@@ -40,6 +40,28 @@ shared_examples_for 'a backend' do
     @job.priority.should == 99
   end
 
+  it "should not have a queue if not specified and default queue is not set" do
+    @job = @backend.enqueue SimpleJob.new
+    @job.queue.should be_nil
+  end
+
+  describe "when a default queue is set" do
+    before(:each) do
+      Delayed::Worker.default_queue = "default_queue"
+    end
+
+    it "should use default queue when queue is not specified" do
+      @job = @backend.enqueue SimpleJob.new
+      @job.queue.should == "default_queue"
+    end
+
+    it "should be able to set queue when enqueueing items" do
+      later = @backend.db_time_now + 5.minutes
+      @job = @backend.enqueue SimpleJob.new, 5, later, "override"
+      @job.queue.should == "override"
+    end
+  end
+
   it "should be able to set run_at when enqueuing items" do
     later = @backend.db_time_now + 5.minutes
     @job = @backend.enqueue SimpleJob.new, 5, later

@@ -79,6 +79,13 @@ describe Delayed::MessageSending do
       Delayed::Worker.default_priority = 0
     end
 
+    it "should set default queue" do
+      Delayed::Worker.default_queue = "default_queue"
+      job = Object.delay.to_s
+      job.queue.should == "default_queue"
+      Delayed::Worker.default_priority = 0
+    end
+
     it "should set job options" do
       run_at = Time.parse('2010-05-03 12:55 AM')
       job = Object.delay(:priority => 20, :run_at => run_at).to_s
