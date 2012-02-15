@@ -169,6 +169,17 @@ describe Delayed::Worker do
             end
           end
 
+          context "when the job's payload has an #on_permanent_failure hook and that hook raises an exception" do
+            before do
+              @job = Delayed::Job.create :payload_object => OnPermanentFailureJob.new
+            end
+
+            it "should handle the exception" do
+              @job.payload_object.should_receive(:on_permanent_failure).and_raise("badness")
+              expect { @worker.reschedule(@job) }.to_not raise_error
+            end
+          end
+
           context "when the job's payload has no #on_permanent_failure hook" do
             # It's a little tricky to test this in a straightforward way, 
             # because putting a should_not_receive expectation on 

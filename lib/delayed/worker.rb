@@ -144,7 +144,11 @@ module Delayed
 
         if job.payload_object.respond_to? :on_permanent_failure
           say "Running on_permanent_failure hook"
-          job.payload_object.on_permanent_failure
+          begin
+            job.payload_object.on_permanent_failure
+          rescue Exception => error
+            say "#{job.name} on permanent failure callback failed with #{error.class.name}: #{error.message}", Logger::ERROR
+          end
         end
 
         self.class.destroy_failed_jobs ? job.destroy : job.update_attributes(:failed_at => Delayed::Job.db_time_now)
