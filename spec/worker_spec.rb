@@ -131,6 +131,11 @@ describe Delayed::Worker do
           @job.locked_at.should be_nil
           @job.locked_by.should be_nil
         end
+
+        it "should handle a failed rescheduling" do
+          @worker.should_receive(:reschedule).and_raise("No MySQL Connection")
+          expect { @worker.run(@job) }.to_not raise_error
+        end
         
         context "when the job's payload implements #reschedule_at" do
           before(:each) do
