@@ -170,6 +170,7 @@ module Delayed
     def handle_failed_job(job, error)
       job.last_error = error.message + "\n" + error.backtrace.join("\n")
       say "#{job.name} failed with #{error.class.name}: #{error.message} - #{job.attempts} failed attempts", Logger::ERROR
+      ActiveRecord::Base.verify_active_connections!
       reschedule(job)
     rescue Exception => err
       say "Failure trying to reschedule job with error #{err.class.name}: #{err.message}", Logger::ERROR

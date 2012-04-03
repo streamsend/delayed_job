@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name              = 'delayed_job_with_named_queues'
-  s.version           = '2.0.7.11'
+  s.version           = '2.0.7.14'
   s.authors           = ["Ray Walters", "Jeff Roush"]
   s.summary           = 'Database-backed asynchronous priority queue system -- Extracted from Shopify'
   s.description       = "Delayed_job (or DJ) encapsulates the common pattern of asynchronously executing longer tasks in the background. It is a direct extraction from Shopify where the job table is responsible for a multitude of core tasks.
@@ -17,7 +17,7 @@ This gem is backported from v3.0.0pre4 of collectiveidea's fork, to add named qu
   s.require_paths     = ["lib"]
   s.test_files        = Dir.glob('spec/**/*')
 
-  s.add_runtime_dependency      'ghazel-daemons', '1.0.13.1'
+  s.add_runtime_dependency      'ghazel-daemons', '= 1.0.13.1'
   s.add_runtime_dependency      'activesupport',  '~> 2.0'
 
   s.add_development_dependency  'rspec',          '~> 1.0'
