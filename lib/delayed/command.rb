@@ -17,6 +17,8 @@ module Delayed
 
       @worker_count = 1
       @monitor = false
+      @log_output = false
+      @backtrace = false
 
       opts = OptionParser.new do |opts|
         opts.banner = "Usage: #{File.basename($0)} [options] start|stop|restart|run"
@@ -64,6 +66,12 @@ module Delayed
         opts.on('--exit-on-complete', "Exit when no more jobs are available to run. This will exit if all jobs are scheduled to run in the future.") do
           @options[:exit_on_complete] = true
         end
+        opts.on('--log-output', "Redirect both STDOUT and STDERR to a logfile named ‘delayed_job.[identifier].output’ in the pid-file directory.") do
+          @log_output = true
+        end
+        opts.on('--backtrace', "Write a backtrace of the last exceptions to the file ‘delayed_job.[identifier].log’ in the pid-file directory if the application exits due to an uncaught exception.") do
+          @backtrace = true
+        end
       end
       @args = opts.parse!(args)
     end
@@ -87,7 +95,7 @@ module Delayed
 
     def run_process(process_name, dir)
       Delayed::Worker.before_fork
-      Daemons.run_proc(process_name, :dir => dir, :dir_mode => :normal, :monitor => @monitor, :ARGV => @args) do |*args|
+      Daemons.run_proc(process_name, :dir => dir, :dir_mode => :normal, :log_output => @log_output, :backtrace => @backtrace, :monitor => @monitor, :ARGV => @args) do |*args|
         $0 = File.join(@options[:prefix], process_name) if @options[:prefix]
         run process_name
       end
