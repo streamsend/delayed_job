@@ -229,7 +229,11 @@ module Delayed
 
     def failed(job)
       self.class.lifecycle.run_callbacks(:failure, self, job) do
-        job.hook(:failure)
+        begin
+          job.hook(:failure)
+        rescue Exception => error
+          say "#{job.name} failure callback failed with #{error.class.name}: #{error.message}", Logger::ERROR
+        end
         self.class.destroy_failed_jobs ? job.destroy : job.fail!
       end
     end
@@ -249,7 +253,10 @@ module Delayed
     def handle_failed_job(job, error)
       job.last_error = "#{error.message}\n#{error.backtrace.join("\n")}"
       say "#{job.name} failed with #{error.class.name}: #{error.message} - #{job.attempts} failed attempts", Logger::ERROR
+      ::ActiveRecord::Base.verify_active_connections!
       reschedule(job)
+    rescue Exception => err
+      say "Failure trying to reschedule job with error #{err.class.name}: #{err.message}", Logger::ERROR
     end
 
     # Run the next job we can get an exclusive lock on.

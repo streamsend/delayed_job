@@ -399,7 +399,7 @@ shared_examples_for "a delayed_job backend" do
     end
 
     it "uses the max_retries value on the payload when defined" do
-      @job.payload_object.stub!(:max_attempts).and_return(99)
+      @job.payload_object.stub(:max_attempts).and_return(99)
       expect(@job.max_attempts).to eq(99)
     end
   end
@@ -472,14 +472,19 @@ shared_examples_for "a delayed_job backend" do
         Delayed::Worker.destroy_failed_jobs = true
       end
 
-      it "records last_error when destroy_failed_jobs = false, max_attempts = 1" do
-        Delayed::Worker.destroy_failed_jobs = false
-        Delayed::Worker.max_attempts = 1
-        worker.run(@job)
-        @job.reload
-        expect(@job.last_error).to match(/did not work/)
-        expect(@job.attempts).to eq(1)
-        expect(@job).to be_failed
+      context "when max_attempts = 1 and destroy_failed_jobs = false" do
+        before do
+          Delayed::Worker.destroy_failed_jobs = false
+          Delayed::Worker.max_attempts = 1
+          worker.run(@job)
+          @job.reload
+        end
+
+        it "records last_error" do
+          expect(@job.last_error).to match(/did not work/)
+          expect(@job.attempts).to eq(1)
+          expect(@job).to be_failed
+        end
       end
 
       it "re-schedules jobs after failing" do
@@ -504,8 +509,8 @@ shared_examples_for "a delayed_job backend" do
 
       it "does not fail when the triggered error doesn't have a message" do
         error_with_nil_message = StandardError.new
-        error_with_nil_message.stub!(:message).and_return nil
-        @job.stub!(:invoke_job).and_raise error_with_nil_message
+        error_with_nil_message.stub(:message).and_return nil
+        @job.stub(:invoke_job).and_raise error_with_nil_message
         expect{worker.run(@job)}.not_to raise_error
       end
     end
@@ -525,6 +530,13 @@ shared_examples_for "a delayed_job backend" do
           it "runs that hook" do
             @job.payload_object.should_receive :failure
             worker.reschedule(@job)
+          end
+
+          context "when the failure hook raises an exception" do
+            it "should rescue that exception" do
+              @job.payload_object.stub(:failure).and_raise(Exception)
+              expect{ worker.reschedule(@job) }.to_not raise_error
+            end
           end
         end
 
