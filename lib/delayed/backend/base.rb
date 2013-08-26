@@ -110,7 +110,7 @@ module Delayed
       end
 
       def hook(name, *args)
-        ActiveRecord::Base.verify_active_connections!
+        ::ActiveRecord::Base.verify_active_connections!
         if payload_object.respond_to?(name)
           method = payload_object.method(name)
           method.arity == 0 ? method.call : method.call(self, *args)
