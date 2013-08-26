@@ -48,14 +48,12 @@ describe Delayed::PerformableMethod do
         story.should_receive(hook).with(job)
         job.invoke_job
       end
-    end
 
-    %w(before after success).each do |hook|
-      it "delegates #{hook} hook to object" do
+      it "calls #verify_active_connections! for #{hook} hook" do
         story = Story.create
         job = story.delay.tell
 
-        story.should_receive(hook).with(job)
+        ActiveRecord::Base.should_receive(:verify_active_connections!).at_least(1)
         job.invoke_job
       end
     end
